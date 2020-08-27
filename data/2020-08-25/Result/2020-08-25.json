@@ -1,0 +1,304 @@
+{
+ "calibInfo": {
+  "cereal_class_version": 22,
+  "FormatVersion": "1.0",
+  "VideoChannels": [
+   {
+    "cereal_class_version": 22,
+    "VideoChannelID": 0,
+    "VideoChanInfo": {
+     "cereal_class_version": 22,
+     "Description": ""
+    },
+    "MediaInfo": {
+     "cereal_class_version": 22,
+     "MediaType": 3,
+     "FilePath": "C:/Users/83942/Desktop/github/preprocess_aicam_photos/data/2020-08-25",
+     "FileTime": 0,
+     "FrameNum": 866,
+     "FrameWidth": -1,
+     "FrameHeight": -1,
+     "breakFrameNum": "Result"
+    },
+    "BasicConfig": {
+     "cereal_class_version": 22,
+     "AlgorithmValue": 1,
+     "EventValue": 1,
+     "FrameStepLength": 10,
+     "MinObjWidth": 10,
+     "MinObjHeight": 10
+    },
+    "GeneralTag": {
+     "cereal_class_version": 22,
+     "SceneType": -1,
+     "Weather": ""
+    },
+    "VideoInfo": {
+     "cereal_class_version": 22,
+     "MainTagPage": {
+      "cereal_class_version": 22,
+      "PropertyPageName": "",
+      "PropertyPageDescript": "",
+      "TagGroups": [],
+      "IsDisplay": ""
+     },
+     "mapFrameInfos": [
+      {
+       "key": {
+        "cereal_class_version": 22,
+        "FrameNum": "a35b67509fee4a468af5d50d75f99237.jpg",
+        "MediaType": 3
+       },
+       "value": {
+        "cereal_class_version": 22,
+        "FrameNum": "a35b67509fee4a468af5d50d75f99237.jpg",
+        "TimeStamp": 0,
+        "OsdTime": 0,
+        "mapRules": [],
+        "mapTargets": [
+         {
+          "key": 40754,
+          "value": {
+           "cereal_class_version": 22,
+           "TargetID": 40754,
+           "TargetType": 1,
+           "Vertex": [
+            {
+             "cereal_class_version": 22,
+             "fX": 0.3,
+             "fY": 0.52963
+            },
+            {
+             "fX": 0.359375,
+             "fY": 0.52963
+            },
+            {
+             "fX": 0.359375,
+             "fY": 0.6425930000000001
+            },
+            {
+             "fX": 0.3,
+             "fY": 0.6425930000000001
+            }
+           ],
+           "PropertyPages": [
+            {
+             "PropertyPageName": "2",
+             "PropertyPageDescript": "pig",
+             "TagGroups": [],
+             "IsDisplay": "1"
+            }
+           ]
+          }
+         }
+        ],
+        "mapFrameEvents": [],
+        "PropertyPages": [
+         {
+          "PropertyPageName": "",
+          "PropertyPageDescript": "",
+          "TagGroups": [],
+          "IsDisplay": ""
+         }
+        ]
+       }
+      },
+      {
+       "key": {
+        "cereal_class_version": 22,
+        "FrameNum": "76dca0bda54f41eca7aa6876ceded6be.jpg",
+        "MediaType": 3
+       },
+       "value": {
+        "cereal_class_version": 22,
+        "FrameNum": "76dca0bda54f41eca7aa6876ceded6be.jpg",
+        "TimeStamp": 0,
+        "OsdTime": 0,
+        "mapRules": [],
+        "mapTargets": [
+         {
+          "key": 95176,
+          "value": {
+           "cereal_class_version": 22,
+           "TargetID": 95176,
+           "TargetType": 1,
+           "Vertex": [
+            {
+             "cereal_class_version": 22,
+             "fX": 0.492708,
+             "fY": 0.661111
+            },
+            {
+             "fX": 0.592708,
+             "fY": 0.661111
+            },
+            {
+             "fX": 0.592708,
+             "fY": 0.8259259999999999
+            },
+            {
+             "fX": 0.492708,
+             "fY": 0.8259259999999999
+            }
+           ],
+           "PropertyPages": [
+            {
+             "PropertyPageName": "2",
+             "PropertyPageDescript": "pig",
+             "TagGroups": [],
+             "IsDisplay": "1"
+            }
+           ]
+          }
+         }
+        ],
+        "mapFrameEvents": [],
+        "PropertyPages": [
+         {
+          "PropertyPageName": "",
+          "PropertyPageDescript": "",
+          "TagGroups": [],
+          "IsDisplay": ""
+         }
+        ]
+       }
+      },
+      {
+       "key": {
+        "cereal_class_version": 22,
+        "FrameNum": "6003f970c11a41efbae4cfc3b214bfdb.jpg",
+        "MediaType": 3
+       },
+       "value": {
+        "cereal_class_version": 22,
+        "FrameNum": "6003f970c11a41efbae4cfc3b214bfdb.jpg",
+        "TimeStamp": 0,
+        "OsdTime": 0,
+        "mapRules": [],
+        "mapTargets": [
+         {
+          "key": 42423,
+          "value": {
+           "cereal_class_version": 22,
+           "TargetID": 42423,
+           "TargetType": 1,
+           "Vertex": [
+            {
+             "cereal_class_version": 22,
+             "fX": 0.096875,
+             "fY": 0.618519
+            },
+            {
+             "fX": 0.14375,
+             "fY": 0.618519
+            },
+            {
+             "fX": 0.14375,
+             "fY": 0.683334
+            },
+            {
+             "fX": 0.096875,
+             "fY": 0.683334
+            }
+           ],
+           "PropertyPages": [
+            {
+             "PropertyPageName": "2",
+             "PropertyPageDescript": "pig",
+             "TagGroups": [],
+             "IsDisplay": "1"
+            }
+           ]
+          }
+         },
+         {
+          "key": 42430,
+          "value": {
+           "cereal_class_version": 22,
+           "TargetID": 42430,
+           "TargetType": 1,
+           "Vertex": [
+            {
+             "cereal_class_version": 22,
+             "fX": 0.471875,
+             "fY": 0.355556
+            },
+            {
+             "fX": 0.541667,
+             "fY": 0.355556
+            },
+            {
+             "fX": 0.541667,
+             "fY": 0.683334
+            },
+            {
+             "fX": 0.471875,
+             "fY": 0.683334
+            }
+           ],
+           "PropertyPages": [
+            {
+             "PropertyPageName": "2",
+             "PropertyPageDescript": "people",
+             "TagGroups": [],
+             "IsDisplay": "1"
+            }
+           ]
+          }
+         },
+         {
+          "key": 42435,
+          "value": {
+           "cereal_class_version": 22,
+           "TargetID": 42435,
+           "TargetType": 1,
+           "Vertex": [
+            {
+             "cereal_class_version": 22,
+             "fX": 0.048958,
+             "fY": 0.637037
+            },
+            {
+             "fX": 0.0875,
+             "fY": 0.637037
+            },
+            {
+             "fX": 0.0875,
+             "fY": 0.7166669999999999
+            },
+            {
+             "fX": 0.048958,
+             "fY": 0.7166669999999999
+            }
+           ],
+           "PropertyPages": [
+            {
+             "PropertyPageName": "2",
+             "PropertyPageDescript": "pig",
+             "TagGroups": [],
+             "IsDisplay": "1"
+            }
+           ]
+          }
+         }
+        ],
+        "mapFrameEvents": [],
+        "PropertyPages": [
+         {
+          "PropertyPageName": "",
+          "PropertyPageDescript": "",
+          "TagGroups": [],
+          "IsDisplay": ""
+         }
+        ]
+       }
+      }
+     ],
+     "VideoChanEvents": []
+    }
+   }
+  ],
+  "AudioChannels": [],
+  "GlobalEvents": []
+ }
+}

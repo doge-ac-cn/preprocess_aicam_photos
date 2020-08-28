@@ -5,8 +5,7 @@ import sys
 import cv2
 import numpy as np
 from PyQt5 import QtGui, QtWidgets
-from PyQt5.QtGui import QImage, QPixmap
-from PyQt5.QtWidgets import QApplication, QDialog, QFileDialog, QGridLayout, QLabel, QPushButton
+from PyQt5.QtWidgets import QApplication, QDialog, QFileDialog, QGridLayout, QLabel
 
 
 class win(QDialog):
@@ -43,12 +42,8 @@ class win(QDialog):
 
                 self.data_dict['calibInfo']['VideoChannels'][0]['MediaInfo']['FilePath'] = self.data_path  # FilePath
 
-                self.data_dict['calibInfo']['VideoChannels'][0]['MediaInfo']['FrameNum'] = len(
-                    os.listdir(self.data_path)) - 1  # FrameNum
-                print(os.listdir(self.data_path)[-1])
-                self.data_dict['calibInfo']['VideoChannels'][0]['MediaInfo']['breakFrameNum'] = \
-                    os.listdir(self.data_path)[
-                        -1]  # breakFrameNum
+                self.data_dict['calibInfo']['VideoChannels'][0]['MediaInfo']['FrameNum'] = len(os.listdir(self.data_path)) - 1  # FrameNumprint(os.listdir(self.data_path)[-1])
+                self.data_dict['calibInfo']['VideoChannels'][0]['MediaInfo']['breakFrameNum'] = os.listdir(self.data_path)[-1]  # breakFrameNum
                 self.doc = json.loads(fd.read())
                 self.num_pictures = len(self.doc['RECORDS'])
         # 创建要保存的文件的文件夹
@@ -72,7 +67,7 @@ class win(QDialog):
                                                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
                                                QtWidgets.QMessageBox.No)
         if reply == QtWidgets.QMessageBox.Yes:
-            # 断点续看
+            # 加载上一次保存的缓存文件
             self.load_progress_file()
         else:
             pass
@@ -170,8 +165,12 @@ class win(QDialog):
         print(keyevent.text())
         if keyevent.text() == 'a' or keyevent.text() == 'A':
             print("上一张")
-            self.index -= 1
-            self.loadImage()
+            if(self.index<=0):
+                QtWidgets.QMessageBox.information(self, "图片整理工具", "已经是第一张了")
+            else:
+                self.index -= 1
+                self.loadImage()
+
 
         if keyevent.text() == 'd' or keyevent.text() == 'D':
             print("下一张")
@@ -202,6 +201,29 @@ class win(QDialog):
 
             else:
                 QtWidgets.QMessageBox.information(self, "图片整理工具", "已经添加过该图片了")
+
+
+    #重写鼠标滚动事件
+
+    def wheelEvent(self, event):
+
+        angle = event.angleDelta() / 8  # 返回QPoint对象，为滚轮转过的数值，单位为1/8度
+        angleX = angle.x()  # 水平滚过的距离(此处用不上)
+        angleY = angle.y()  # 竖直滚过的距离
+        if angleY > 0:
+            print("上一张")
+            if (self.index <= 0):
+                QtWidgets.QMessageBox.information(self, "图片整理工具", "已经是第一张了")
+            else:
+                self.index -= 1
+                self.loadImage()
+        else:  # 滚轮下滚
+            print("下一张")
+            if self.index >= self.num_pictures - 1:
+                QtWidgets.QMessageBox.information(self, "图片整理工具", "已经是最后一张了")
+            else:
+                self.index += 1
+                self.loadImage()
 
 
     #重写关闭程序事件
@@ -314,3 +336,5 @@ if __name__ == '__main__':
     w = win()
     w.show()
     sys.exit(a.exec_())
+
+

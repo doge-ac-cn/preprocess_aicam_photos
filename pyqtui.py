@@ -10,13 +10,21 @@ from PyQt5.QtWidgets import QApplication, QDialog, QFileDialog, QGridLayout, QLa
 
 
 class win(QDialog):
-    def __init__(self):
-        # 初始化一个img的ndarry，用于存储图像
-        self.img = np.ndarray(())
-        super().__init__()
-        self.initUI()
+    index = 0  # 读到哪一张
+    num_pictures = 0  # 一共有多少张图
+    img = np.ndarray(())  # 初始化一个img的ndarry，用于存储图像，同时也是用于显示
+    img_with_mask=np.ndarray(()) # 初始化一个img，用于存储带遮罩的图像
+    data_path = ""  # 选择数据文件夹
+    imgs_to_save = {}  # 创建存储要保存的图片名的dict,key为图片index,value为要保存的目标
+    original_img = ""  # 初始载入的图像
+    targets_all = []  # 当前读取的图像的所有目标信息，做一个缓存
+    targets_in_region = []  # 当前读取的图像的所有在区域内的目标信息，做一个缓存
+    data_dict = "json"  # 读取的标注数据的json
+    doc = "json"  # 最终要保存的json，加载自test.json这个模板文件
 
-    def initUI(self):
+    def __init__(self):
+
+        super().__init__()
         self.resize(1920, 1080)
         self.label = QLabel()
 
@@ -26,7 +34,7 @@ class win(QDialog):
         # 选择数据文件夹
         self.data_path = QFileDialog.getExistingDirectory(self, "选取文件夹", './')
 
-        self.index = 0
+
 
         # 读取json文件
         with open(self.data_path + '/Result/msg.json') as fd:
@@ -39,42 +47,65 @@ class win(QDialog):
                     os.listdir(self.data_path)) - 1  # FrameNum
                 print(os.listdir(self.data_path)[-1])
                 self.data_dict['calibInfo']['VideoChannels'][0]['MediaInfo']['breakFrameNum'] = \
-                os.listdir(self.data_path)[
-                    -1]  # breakFrameNum
+                    os.listdir(self.data_path)[
+                        -1]  # breakFrameNum
                 self.doc = json.loads(fd.read())
-        # 创建存储要保存的图片名的dict,key为图片index,value为要保存的目标
-        self.imgs_to_save = {}
+                self.num_pictures = len(self.doc['RECORDS'])
         # 创建要保存的文件的文件夹
         if not os.path.exists(self.data_path + '_convert'):
             os.mkdir(self.data_path + '_convert')
             os.mkdir(self.data_path + '_convert/Result')
 
-        #加载第一张图
+        reply = QtWidgets.QMessageBox.question(self,
+                                               '图片整理工具',
+                                               "是否定位到上一次查看的位置？",
+                                               QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+                                               QtWidgets.QMessageBox.No)
+        if reply == QtWidgets.QMessageBox.Yes:
+            #断点续看
+            self.load_index()
+        else:
+            pass
+        reply = QtWidgets.QMessageBox.question(self,
+                                               '图片整理工具',
+                                               "是否加载上一次保存的缓存文件",
+                                               QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+                                               QtWidgets.QMessageBox.No)
+        if reply == QtWidgets.QMessageBox.Yes:
+            # 断点续看
+            self.load_progress_file()
+        else:
+            pass
+
+        # 加载第一张图
         self.loadImage()
+
+    #加载当前图片
     def loadImage(self):
         # 调用存储文件
 
         targets = json.loads(self.doc['RECORDS'][self.index]['algorithm_result'])
         region_points = \
-        json.loads(self.doc['RECORDS'][self.index]['device_rule_result'])['alertInfo']['ruleInfo']['region']['polygon']
+            json.loads(self.doc['RECORDS'][self.index]['device_rule_result'])['alertInfo']['ruleInfo']['region'][
+                'polygon']
         alert_region_points = []
         for point in region_points:
             alert_region_points.append([int(float(point['x']) * 1920), int(float(point['y']) * 1080)])
         alert_region_points = np.array([alert_region_points], np.int32)
         original_img = cv2.imread(self.data_path + '/' + self.doc['RECORDS'][self.index]['msg_id'] + '.jpg')
-        self.original_img =copy.deepcopy(original_img)
+        self.original_img = copy.deepcopy(original_img)
 
         img = copy.deepcopy(original_img)
-        img =cv2.polylines(img, alert_region_points , 1, 255)
+        img = cv2.polylines(img, alert_region_points, 1, (255,255,255),thickness=1)
 
-        #先绘制遮挡区域的mask
+        # 先绘制遮挡区域的mask
         mask = np.zeros(original_img.shape, np.uint8)
         mask = cv2.fillPoly(mask, alert_region_points, (255, 255, 255))
-        #先画一个遮罩方便后面判断target在不在框内
-        img_cache = cv2.bitwise_and(original_img,mask)
+        # 先画一个遮罩方便后面判断target在不在框内
+        img_cache = cv2.bitwise_and(original_img, mask)
         self.targets_all = []
-        self.targets_in_region=[]
-        target_index=0
+        self.targets_in_region = []
+        target_index = 0
         for target in targets['targets']:
             rect = target['obj']['rect']
 
@@ -90,8 +121,6 @@ class win(QDialog):
             if (np.sum(img_cache[y_center]
                        [x_center]) != 0):
 
-                # 添加这几个点到target对象内
-
                 # 遮罩修正，去掉在区域内物体上覆盖的遮罩
                 erase_mask_region = [
                     [dict_['x1'], dict_['y1']],
@@ -102,14 +131,21 @@ class win(QDialog):
                 ]
                 # self.targets.append(erase_mask_region)
                 erase_mask_region = np.array(erase_mask_region, np.int32)
-                mask = cv2.fillPoly(mask, [erase_mask_region], (255,255, 255))
+                mask = cv2.fillPoly(mask, [erase_mask_region], (255, 255, 255))
                 cv2.rectangle(img, (dict_['x1'], dict_['y1']), (dict_['x2'], dict_['y2']), (0, 255, 0), 2)
-                #区域内目标添加该目标索引
+                # 区域内目标添加该目标索引
                 self.targets_in_region.append(target_index)
             else:
                 cv2.rectangle(img, (dict_['x1'], dict_['y1']), (dict_['x2'], dict_['y2']), (0, 0, 255), 2)
 
-            self.targets_all .append(target_index)
+            #在框内写框的物体种类以及置信度
+            if target['obj']['type'] == 1:
+                img = cv2.putText(img, "pig"+str(target['obj']['confidence']), (x_center, y_center), cv2.FONT_ITALIC, 0.8, (255, 255, 255), 2)
+            else:
+                img = cv2.putText(img, "people"+str(target['obj']['confidence']), (x_center, y_center), cv2.FONT_ITALIC, 0.8, (255, 255, 255), 2)
+
+            #target绘制完毕之后添加到target_all里
+            self.targets_all.append(target_index)
             target_index += 1
 
         original_img = cv2.bitwise_and(original_img, mask)
@@ -117,6 +153,7 @@ class win(QDialog):
         self.img = img
         self.displayImg()
 
+    #在gui上显示当前图片
     def displayImg(self):
         shrink = cv2.cvtColor(self.img, cv2.COLOR_BGR2RGB)
         self.QtImg = QtGui.QImage(shrink.data,
@@ -128,31 +165,38 @@ class win(QDialog):
         self.label.setPixmap(QtGui.QPixmap.fromImage(self.QtImg))
         self.label.show()
 
+    #重写按键响应事件用来实现图片切换和保存功能
     def keyPressEvent(self, keyevent):
         print(keyevent.text())
         if keyevent.text() == 'a' or keyevent.text() == 'A':
             print("上一张")
             self.index -= 1
             self.loadImage()
+
         if keyevent.text() == 'd' or keyevent.text() == 'D':
             print("下一张")
-            self.index += 1
-            self.loadImage()
-        if keyevent.text() == 'w'  or keyevent.text() == 'W':
+            if self.index >= self.num_pictures-1:
+                QtWidgets.QMessageBox.information(self, "图片整理工具", "已经是最后一张了")
+            else:
+                self.index += 1
+                self.loadImage()
+
+        if keyevent.text() == 'w' or keyevent.text() == 'W':
             print("保存加遮罩的图片")
             # 在要保存的list内则显示已添加，否则直接添加进入list
-            if (self.index not in self.imgs_to_save.keys()):
-                self.imgs_to_save[self.index]=self.targets_in_region
+            if self.index not in self.imgs_to_save.keys():
+                self.imgs_to_save[self.index] = self.targets_in_region
                 cv2.imwrite(self.data_path + '_convert/' + self.doc['RECORDS'][self.index]['msg_id'] + '.jpg',
                             self.img_with_mask)
 
             else:
                 QtWidgets.QMessageBox.information(self, "图片整理工具", "已经添加过该图片了")
-        if keyevent.text() == ' ' :
+        if keyevent.text() == ' ':
             print("保存原图")
             # 在要保存的list内则显示已添加，否则直接添加进入list
-            if (self.index not in self.imgs_to_save.keys()):
-                self.imgs_to_save[self.index]=self.targets_all
+            print(str(self.imgs_to_save.keys()))
+            if self.index not in self.imgs_to_save.keys():
+                self.imgs_to_save[self.index] = self.targets_all
                 cv2.imwrite(self.data_path + '_convert/' + self.doc['RECORDS'][self.index]['msg_id'] + '.jpg',
                             self.original_img)
 
@@ -160,6 +204,7 @@ class win(QDialog):
                 QtWidgets.QMessageBox.information(self, "图片整理工具", "已经添加过该图片了")
 
 
+    #重写关闭程序事件
     def closeEvent(self, event):
         reply = QtWidgets.QMessageBox.question(self,
                                                '图片整理工具',
@@ -167,13 +212,15 @@ class win(QDialog):
                                                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
                                                QtWidgets.QMessageBox.No)
         if reply == QtWidgets.QMessageBox.Yes:
-            self.saveImg()
+            self.savedata()
+            self.save_progress_file()
             QtWidgets.QMessageBox.information(self, "图片整理工具", "保存数据完成，点击ok退出")
             event.accept()
         else:
             event.ignore()
 
-    def saveImg(self):
+    #关闭前对标注文件进行保存
+    def savedata(self):
         print(self.imgs_to_save)
         list_frames = []
         frames = self.doc['RECORDS']
@@ -195,11 +242,11 @@ class win(QDialog):
 
                 targets = json.loads(frame['algorithm_result'])['targets']
 
-                target_index=0
+                target_index = 0
                 # 遍历每个目标
                 for item in targets:
                     # print(item)
-                    if(target_index in self.imgs_to_save[frame_index]):
+                    if target_index in self.imgs_to_save[frame_index]:
                         rect = item['obj']['rect']
                         single_target_model['key'] = item['obj']['id']
                         single_target_model['value']['TargetID'] = item['obj']['id']
@@ -223,7 +270,7 @@ class win(QDialog):
                         single_target_model['value']['Vertex'][3]['fX'] = left
                         single_target_model['value']['Vertex'][3]['fY'] = bottom
                         targets_xy.append(copy.deepcopy(single_target_model))
-                    target_index+=1
+                    target_index += 1
                 single_frame_model['value']['mapTargets'] = targets_xy
                 list_frames.append(copy.deepcopy(single_frame_model))
 
@@ -234,7 +281,34 @@ class win(QDialog):
         with open(self.data_path + '_convert/Result/' + self.data_path.split("/")[-1] + '_convert.json', 'w') as f:
             f.write(json_data)
 
+    #保存配置文件，方便下次打开时加载
+    def save_progress_file(self):
+        json_data = json.dumps(self.imgs_to_save, indent=1)
+        with open(self.data_path + '/Result/img_to_save_cache.json', 'w') as f:
+            f.write(json_data)
 
+        with open(self.data_path + '/Result/index.txt', 'w') as f:
+            f.write(str(self.index))
+
+
+    #加载上一次退出时自动保存的配置文件
+    def load_progress_file(self):
+        if(os.path.exists(self.data_path + '/Result/img_to_save_cache.json')):
+            with open(self.data_path + '/Result/img_to_save_cache.json', 'r') as f:
+                json_dict=json.load(f)
+                #不能直接复制，因为原来的int转json变成了str，需要转回来
+                for key,value in json_dict.items():
+                    self.imgs_to_save[int(key)]=value
+        else:
+            QtWidgets.QMessageBox.information(self, "图片整理工具", "未找到上一次使用的缓存")
+
+    #定位到上一次退出时的浏览位置
+    def load_index(self):
+        if (os.path.exists(self.data_path + '/Result/img_to_save_cache.json')):
+            with open(self.data_path + '/Result/index.txt', 'r') as f:
+                self.index = int(f.read())
+        else:
+            QtWidgets.QMessageBox.information(self, "图片整理工具", "未找到上一次查看的位置")
 if __name__ == '__main__':
     a = QApplication(sys.argv)
     w = win()

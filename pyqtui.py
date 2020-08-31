@@ -6,6 +6,7 @@ import cv2
 import numpy as np
 from PyQt5 import QtGui, QtWidgets
 from PyQt5.QtWidgets import QApplication, QDialog, QFileDialog, QGridLayout, QLabel
+from qtpy import QtCore
 
 
 class win(QDialog):
@@ -15,12 +16,15 @@ class win(QDialog):
     img_with_mask=np.ndarray(()) # 初始化一个img，用于存储带遮罩的图像
     data_path = ""  # 选择数据文件夹
     imgs_to_save = {}  # 创建存储要保存的图片名的dict,key为图片index,value为要保存的目标
-    original_img = ""  # 初始载入的图像
+    original_img = np.ndarray(())  # 初始载入的图像
     targets_all = []  # 当前读取的图像的所有目标信息，做一个缓存
     targets_in_region = []  # 当前读取的图像的所有在区域内的目标信息，做一个缓存
     data_dict = "json"  # 读取的标注数据的json
     doc = "json"  # 最终要保存的json，加载自test.json这个模板文件
-
+    cover_regions = []  # 所有的自主画遮罩的区域
+    cover_region= [] # 正在画的自主画遮罩的区域
+    is_drawing_flag=False #用于表示现在是否正在画框
+    img_with_covering= np.ndarray(()) #有遮盖区域的图片
     def __init__(self):
 
         super().__init__()
@@ -78,18 +82,19 @@ class win(QDialog):
     #加载当前图片
     def loadImage(self):
         # 调用存储文件
-
+        self.cover_regions=[]#重置标定区域
         targets = json.loads(self.doc['RECORDS'][self.index]['algorithm_result'])
         region_points = \
             json.loads(self.doc['RECORDS'][self.index]['device_rule_result'])['alertInfo']['ruleInfo']['region'][
                 'polygon']
         alert_region_points = []
+
         for point in region_points:
             alert_region_points.append([int(float(point['x']) * 1920), int(float(point['y']) * 1080)])
         alert_region_points = np.array([alert_region_points], np.int32)
         original_img = cv2.imread(self.data_path + '/' + self.doc['RECORDS'][self.index]['msg_id'] + '.jpg')
         self.original_img = copy.deepcopy(original_img)
-
+        self.img_with_covering = copy.deepcopy(original_img)
         img = copy.deepcopy(original_img)
         img = cv2.polylines(img, alert_region_points, 1, (255,255,255),thickness=1)
 
@@ -143,14 +148,15 @@ class win(QDialog):
             self.targets_all.append(target_index)
             target_index += 1
 
-        original_img = cv2.bitwise_and(original_img, mask)
-        self.img_with_mask = original_img
+
+        img_with_mask= cv2.bitwise_and(original_img, mask)
+        self.img_with_mask = img_with_mask
         self.img = img
-        self.displayImg()
+        self.displayImg(self.img)
 
     #在gui上显示当前图片
-    def displayImg(self):
-        shrink = cv2.cvtColor(self.img, cv2.COLOR_BGR2RGB)
+    def displayImg(self,img):
+        shrink = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         self.QtImg = QtGui.QImage(shrink.data,
                                   shrink.shape[1],
                                   shrink.shape[0],
@@ -197,11 +203,23 @@ class win(QDialog):
             if self.index not in self.imgs_to_save.keys():
                 self.imgs_to_save[self.index] = self.targets_all
                 cv2.imwrite(self.data_path + '_convert/' + self.doc['RECORDS'][self.index]['msg_id'] + '.jpg',
-                            self.original_img)
+                            self.img_with_covering)
 
             else:
                 QtWidgets.QMessageBox.information(self, "图片整理工具", "已经添加过该图片了")
 
+
+        if(keyevent.text() == 's' or keyevent.text() == 'S' )  and self.is_drawing_flag==False:
+            print("切换到画框模式")
+            self.is_drawing_flag = True
+
+        else:
+            if (keyevent.text() == 's' or keyevent.text() == 'S' ) and self.is_drawing_flag == True:
+                print("画框完毕")
+                self.cover_regions.append(copy.deepcopy(np.array(self.cover_region,np.int32)))
+                self.cover_region=[]
+                self.is_drawing_flag = False
+                self.load_cover_img()
 
     #重写鼠标滚动事件
 
@@ -224,6 +242,23 @@ class win(QDialog):
             else:
                 self.index += 1
                 self.loadImage()
+
+    #重写鼠标点击函数，用于自己画遮罩使用。
+    def mousePressEvent(self, event):
+        if event.buttons() == QtCore.Qt.LeftButton and self.is_drawing_flag == True:  # 左键按下
+            #往当前的单个遮盖区域内添加点
+            self.cover_region.append([event.x(),event.y()])
+            img = copy.deepcopy(self.img)
+            cover_region_points = np.array([self.cover_region], np.int32)
+            img = cv2.polylines(img,cover_region_points , 1, (0,0,0),thickness=3)
+            self.displayImg(img)
+    def load_cover_img(self):
+
+        #要保存的图
+        self.img_with_covering = cv2.fillPoly(self.img_with_covering,self.cover_regions, (0, 0, 0))
+        #绘制的图
+        self.img = cv2.fillPoly(self.img,self.cover_regions, (0, 0, 0))
+        self.displayImg(self.img)
 
 
     #重写关闭程序事件

@@ -195,7 +195,18 @@ class win(QDialog):
                             self.img_with_mask)
 
             else:
-                QtWidgets.QMessageBox.information(self, "图片整理工具", "已经添加过该图片了")
+                reply = QtWidgets.QMessageBox.question(self,
+                                                       '图片整理工具',
+                                                       "已经添加过该图片了，是否覆盖保存",
+                                                       QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+                                                       QtWidgets.QMessageBox.No)
+                if reply == QtWidgets.QMessageBox.Yes:
+                    self.imgs_to_save[self.index] = self.targets_in_region
+                    cv2.imwrite(self.data_path + '_convert/' + self.doc['RECORDS'][self.index]['msg_id'] + '.jpg',
+                                self.img_with_mask)
+                else:
+                    pass
+
         if keyevent.text() == ' ':
             print("保存原图")
             # 在要保存的list内则显示已添加，否则直接添加进入list
@@ -206,7 +217,17 @@ class win(QDialog):
                             self.img_with_covering)
 
             else:
-                QtWidgets.QMessageBox.information(self, "图片整理工具", "已经添加过该图片了")
+                reply = QtWidgets.QMessageBox.question(self,
+                                                       '图片整理工具',
+                                                       "已经添加过该图片了，是否覆盖保存",
+                                                       QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+                                                       QtWidgets.QMessageBox.No)
+                if reply == QtWidgets.QMessageBox.Yes:
+                    self.imgs_to_save[self.index] = self.targets_all
+                    cv2.imwrite(self.data_path + '_convert/' + self.doc['RECORDS'][self.index]['msg_id'] + '.jpg',
+                                self.img_with_covering)
+                else:
+                    pass
 
 
         if(keyevent.text() == 's' or keyevent.text() == 'S' )  and self.is_drawing_flag==False:
@@ -216,10 +237,13 @@ class win(QDialog):
         else:
             if (keyevent.text() == 's' or keyevent.text() == 'S' ) and self.is_drawing_flag == True:
                 print("画框完毕")
-                self.cover_regions.append(copy.deepcopy(np.array(self.cover_region,np.int32)))
-                self.cover_region=[]
+                if(self.cover_region!=[]):
+                    cover_region_cache=copy.deepcopy(np.array(self.cover_region,np.int32))
+                    self.cover_regions.append(cover_region_cache)
+                    self.load_cover_img()
+                    self.cover_region=[]
                 self.is_drawing_flag = False
-                self.load_cover_img()
+
 
     #重写鼠标滚动事件
 
@@ -252,6 +276,8 @@ class win(QDialog):
             cover_region_points = np.array([self.cover_region], np.int32)
             img = cv2.polylines(img,cover_region_points , 1, (0,0,0),thickness=3)
             self.displayImg(img)
+
+
     def load_cover_img(self):
 
         #要保存的图

@@ -10,7 +10,7 @@ from qtpy import QtCore
 
 
 class win(QDialog):
-    index = 84 # 读到哪一张
+    index = 0 # 读到哪一张
     num_pictures = 0  # 一共有多少张图
     img = np.ndarray(())  # 初始化一个img的ndarry，用于存储图像，同时也是用于显示
     img_with_mask = np.ndarray(())  # 初始化一个img，用于存储带遮罩的图像
@@ -21,10 +21,11 @@ class win(QDialog):
     targets_in_region = []  # 当前读取的图像的所有在区域内的目标信息，做一个缓存
     data_dict = "json"  # 读取的标注数据的json
     doc = "json"  # 最终要保存的json，加载自test.json这个模板文件
+    all_picture_cover_region = []# 所有图片的遮罩区域
     cover_regions = []  # 所有的自主画遮罩的区域
     cover_region = []  # 正在画的自主画遮罩的区域
     is_drawing_flag = False  # 用于表示现在是否正在画框
-    img_with_covering = np.ndarray(())  # 有遮盖区域的图片
+
 
     def __init__(self):
 
@@ -83,7 +84,7 @@ class win(QDialog):
     # 加载当前图片
     def loadImage(self):
         # 调用存储文件
-        self.cover_regions = []  # 重置标定区域
+        self.cover_regions = copy.deepcopy(self.all_picture_cover_region)   # 重置标定区域
         targets = json.loads(self.doc['RECORDS'][self.index]['algorithm_result'])
         region_points = \
             json.loads(self.doc['RECORDS'][self.index]['device_rule_result'])['alertInfo']['ruleInfo']['region'][
@@ -99,7 +100,6 @@ class win(QDialog):
             QtWidgets.QMessageBox.information(self, "图片整理工具", "无法显示当前图片,请检查图片"+self.doc['RECORDS'][self.index]['msg_id'] + '.jpg'+"是否存在或者是否能正常显示")
             return False
         self.original_img = copy.deepcopy(original_img)
-        self.img_with_covering = copy.deepcopy(original_img)
         img = copy.deepcopy(original_img)
         img = cv2.polylines(img, alert_region_points, 1, (255, 255, 255), thickness=1)
 
@@ -155,10 +155,18 @@ class win(QDialog):
             self.targets_all.append(target_index)
             target_index += 1
 
+
         img_with_mask = cv2.bitwise_and(original_img, mask)
         self.img_with_mask = img_with_mask
         self.img = img
-        self.displayImg(self.img)
+
+        if(self.cover_regions==[]):
+            self.displayImg(self.img)
+        else:
+            print(self.cover_regions)
+            for region in self.cover_regions:
+                self.img = cv2.fillPoly(self.img, [region], (0, 0, 0))
+            self.displayImg(self.img)
 
     # 在gui上显示当前图片
     def displayImg(self, img):
@@ -219,7 +227,7 @@ class win(QDialog):
             if self.index not in self.imgs_to_save.keys():
                 self.imgs_to_save[self.index] = self.targets_all
                 cv2.imwrite(self.data_path + '_convert/' + self.doc['RECORDS'][self.index]['msg_id'] + '.jpg',
-                            self.img_with_covering)
+                            self.img)
 
             else:
                 reply = QtWidgets.QMessageBox.question(self,
@@ -230,7 +238,7 @@ class win(QDialog):
                 if reply == QtWidgets.QMessageBox.Yes:
                     self.imgs_to_save[self.index] = self.targets_all
                     cv2.imwrite(self.data_path + '_convert/' + self.doc['RECORDS'][self.index]['msg_id'] + '.jpg',
-                                self.img_with_covering)
+                                self.img)
                 else:
                     pass
 
@@ -248,6 +256,29 @@ class win(QDialog):
                     self.cover_region = []
                 self.is_drawing_flag = False
 
+        if keyevent.text() == 'O' or keyevent.text() == 'o':
+            reply = QtWidgets.QMessageBox.question(self,
+                                                   '图片整理工具',
+                                                   "是否对所有图片应用该画框？",
+                                                   QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+                                                   QtWidgets.QMessageBox.No)
+
+            if reply == QtWidgets.QMessageBox.Yes:
+                self.all_picture_cover_region  = copy.deepcopy(self.cover_regions) #所有图片的遮罩区域同步为当前这张图片的遮罩区域
+            else:
+                pass
+        if keyevent.text() == 'P' or keyevent.text() == 'p':
+            reply = QtWidgets.QMessageBox.question(self,
+                                                   '图片整理工具',
+                                                   "是否对将所有图片共用画框取消？",
+                                                   QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+                                                   QtWidgets.QMessageBox.No)
+
+            if reply == QtWidgets.QMessageBox.Yes:
+                self.all_picture_cover_region = [] #重置所有图片的遮罩区域
+                self.loadImage()
+            else:
+                pass
     # 重写鼠标滚动事件
 
     def wheelEvent(self, event):
@@ -282,8 +313,6 @@ class win(QDialog):
 
     def load_cover_img(self):
 
-        # 要保存的图
-        self.img_with_covering = cv2.fillPoly(self.img_with_covering, self.cover_regions, (0, 0, 0))
         # 绘制的图
         self.img = cv2.fillPoly(self.img, self.cover_regions, (0, 0, 0))
         self.displayImg(self.img)

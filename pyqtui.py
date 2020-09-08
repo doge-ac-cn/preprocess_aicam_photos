@@ -225,9 +225,14 @@ class win(QDialog):
             # 在要保存的list内则显示已添加，否则直接添加进入list
             print(str(self.imgs_to_save.keys()))
             if self.index not in self.imgs_to_save.keys():
+                #保存标注信息缓存
                 self.imgs_to_save[self.index] = self.targets_all
-                cv2.imwrite(self.data_path + '_convert/' + self.doc['RECORDS'][self.index]['msg_id'] + '.jpg',
-                            self.img)
+                #保存图片前在原图画遮罩
+                img_save = copy.deepcopy(self.original_img)
+                for region in self.cover_regions:
+                    img_save = cv2.fillPoly(img_save, [region], (0, 0, 0))
+                #保存图片
+                cv2.imwrite(self.data_path + '_convert/' + self.doc['RECORDS'][self.index]['msg_id'] + '.jpg',img_save)
 
             else:
                 reply = QtWidgets.QMessageBox.question(self,
